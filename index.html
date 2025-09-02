@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GroupScheduler - Agenda Colaborativa</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗓️ GroupScheduler</h1>
+            <div class="user-info">
+                <span id="userName">Rodrigo</span>
+                <button id="shareAppBtn">📤 Compartilhar App</button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="groups">👥 Grupos</button>
+            <button class="tab" data-tab="agenda">📅 Agenda</button>
+            <button class="tab" data-tab="notifications">🔔 Notificações</button>
+        </nav>
+
+        <!-- Aba Grupos -->
+        <div id="groups" class="tab-content active">
+            <div class="section-header">
+                <h2>Meus Grupos</h2>
+                <button id="createGroupBtn" class="btn-primary">+ Criar Grupo</button>
+            </div>
+            
+            <div id="groupsList" class="groups-list"></div>
+            
+            <!-- Modal Criar Grupo -->
+            <div id="createGroupModal" class="modal">
+                <div class="modal-content">
+                    <h3>Criar Novo Grupo</h3>
+                    <input type="text" id="groupName" placeholder="Nome do grupo">
+                    <textarea id="groupDescription" placeholder="Descrição do grupo"></textarea>
+                    <div class="modal-actions">
+                        <button id="saveGroupBtn" class="btn-primary">Criar</button>
+                        <button id="cancelGroupBtn" class="btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Gerenciar Membros -->
+            <div id="membersModal" class="modal">
+                <div class="modal-content">
+                    <h3>Gerenciar Membros</h3>
+                    <div class="add-member">
+                        <input type="text" id="memberName" placeholder="Nome do membro">
+                        <input type="email" id="memberEmail" placeholder="Email do membro">
+                        <button id="addMemberBtn" class="btn-primary">Adicionar</button>
+                    </div>
+                    <div id="membersList" class="members-list"></div>
+                    <div class="modal-actions">
+                        <button id="closeMembersBtn" class="btn-secondary">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Agenda -->
+        <div id="agenda" class="tab-content">
+            <div class="section-header">
+                <h2>Agenda Colaborativa</h2>
+                <button id="createEventBtn" class="btn-primary">+ Criar Evento</button>
+            </div>
+            
+            <div class="filters">
+                <select id="groupFilter">
+                    <option value="">Todos os grupos</option>
+                </select>
+                <select id="typeFilter">
+                    <option value="">Todos os tipos</option>
+                    <option value="esporte">🏃 Esporte</option>
+                    <option value="leitura">📚 Leitura</option>
+                    <option value="administracao">⏰ Administração do Tempo</option>
+                    <option value="outro">📝 Outro</option>
+                </select>
+            </div>
+            
+            <div id="eventsList" class="events-list"></div>
+            
+            <!-- Modal Criar Evento -->
+            <div id="createEventModal" class="modal">
+                <div class="modal-content">
+                    <h3>Criar Novo Evento</h3>
+                    <input type="text" id="eventTitle" placeholder="Título do evento">
+                    <textarea id="eventDescription" placeholder="Descrição do evento"></textarea>
+                    
+                    <select id="eventGroup">
+                        <option value="">Selecione um grupo</option>
+                    </select>
+                    
+                    <select id="eventType">
+                        <option value="esporte">🏃 Esporte</option>
+                        <option value="leitura">📚 Leitura</option>
+                        <option value="administracao">⏰ Administração do Tempo</option>
+                        <option value="outro">📝 Outro</option>
+                    </select>
+                    
+                    <input type="date" id="eventDate">
+                    <input type="time" id="eventTime">
+                    
+                    <label>
+                        <input type="checkbox" id="eventRecurring">
+                        Evento recorrente (semanal)
+                    </label>
+                    
+                    <div class="modal-actions">
+                        <button id="saveEventBtn" class="btn-primary">Criar Evento</button>
+                        <button id="cancelEventBtn" class="btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Notificações -->
+        <div id="notifications" class="tab-content">
+            <div class="section-header">
+                <h2>Notificações</h2>
+                <button id="clearNotificationsBtn" class="btn-secondary">Limpar Todas</button>
+            </div>
+            
+            <div class="notification-settings">
+                <h3>Configurações de Notificação</h3>
+                <label>
+                    <input type="checkbox" id="browserNotifications" checked>
+                    Notificações do navegador
+                </label>
+                <label>
+                    <input type="checkbox" id="emailNotifications">
+                    Notificações por email
+                </label>
+                <label>
+                    Avisar com antecedência:
+                    <select id="notificationTiming">
+                        <option value="5">5 minutos</option>
+                        <option value="15" selected>15 minutos</option>
+                        <option value="30">30 minutos</option>
+                        <option value="60">1 hora</option>
+                    </select>
+                </label>
+            </div>
+            
+            <div id="notificationsList" class="notifications-list"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
