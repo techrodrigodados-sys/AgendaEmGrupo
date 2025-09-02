@@ -126,26 +126,33 @@
             </div>
             
             <div class="notification-settings">
-                <h3>Configurações de Notificação</h3>
-                <label>
-                    <input type="checkbox" id="browserNotifications" checked>
-                    Notificações do navegador
-                </label>
-                <label>
-                    <input type="checkbox" id="emailNotifications">
-                    Notificações por email
-                </label>
-                <label>
-                    Avisar com antecedência:
-                    <select id="notificationTiming">
-                        <option value="5">5 minutos</option>
-                        <option value="15" selected>15 minutos</option>
-                        <option value="30">30 minutos</option>
-                        <option value="60">1 hora</option>
-                    </select>
-                </label>
-            </div>
-            
+    <h3>Configurações de Notificação</h3>
+    <label>
+        <input type="checkbox" id="browserNotifications" checked>
+        Notificações nativas do celular
+    </label>
+    <label>
+        <input type="checkbox" id="vibrationNotifications" checked>
+        Vibração no celular
+    </label>
+    <label>
+        <input type="checkbox" id="calendarIntegration" checked>
+        Adicionar automaticamente ao calendário
+    </label>
+    <label>
+        Avisar com antecedência:
+        <select id="notificationTiming">
+            <option value="5">5 minutos</option>
+            <option value="15" selected>15 minutos</option>
+            <option value="30">30 minutos</option>
+            <option value="60">1 hora</option>
+            <option value="120">2 horas</option>
+        </select>
+    </label>
+    <button id="addToCalendarBtn" class="btn-primary" style="margin-top: 15px;">
+        📅 Exportar Todos os Eventos para Calendário
+    </button>
+</div>            
             <div id="notificationsList" class="notifications-list"></div>
         </div>
     </div>
@@ -153,3 +160,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+
