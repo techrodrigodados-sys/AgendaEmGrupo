@@ -4,18 +4,98 @@ class GroupScheduler {
         this.events = JSON.parse(localStorage.getItem('events')) || [];
         this.notifications = JSON.parse(localStorage.getItem('notifications')) || [];
         this.currentUser = 'Rodrigo';
+        this.swRegistration = null;
         
         this.init();
         this.setupEventListeners();
-        this.requestNotificationPermission();
-        this.startNotificationChecker();
+        this.setupNotificationSystem();
     }
 
-    init() {
+    async init() {
         this.renderGroups();
         this.renderEvents();
         this.renderNotifications();
         this.populateGroupSelects();
+        
+        // Processar URL parameters (para notificações)
+        this.handleURLParameters();
+    }
+
+    // Sistema de Notificações Avançado
+    async setupNotificationSystem() {
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.register('sw.js');
+                this.swRegistration = registration;
+                console.log('Service Worker registrado:', registration);
+                
+                // Mostrar notificação de boas-vindas se for primeira vez
+                const isFirstTime = !localStorage.getItem('appInstalled');
+                if (isFirstTime) {
+                    localStorage.setItem('appInstalled', 'true');
+                    setTimeout(() => this.showWelcomeNotification(), 2000);
+                }
+            } catch (error) {
+                console.error('Erro ao registrar Service Worker:', error);
+            }
+        }
+
+        // Solicitar permissão para notificações
+        await this.requestNotificationPermission();
+
+        // Configurar Background Sync
+        if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+            navigator.serviceWorker.ready.then(registration => {
+                return registration.sync.register('background-sync-notifications');
+            });
+        }
+
+        // Iniciar verificador de notificações avançado
+        this.startAdvancedNotificationChecker();
+    }
+
+    async requestNotificationPermission() {
+        if ('Notification' in window) {
+            if (Notification.permission === 'default') {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    console.log('Permissão de notificação concedida');
+                } else {
+                    console.log('Permissão de notificação negada');
+                }
+            }
+        }
+    }
+
+    showWelcomeNotification() {
+        if ('serviceWorker' in navigator && this.swRegistration && Notification.permission === 'granted') {
+            this.swRegistration.showNotification('🎉 GroupScheduler Ativado!', {
+                body: 'Você receberá notificações dos seus eventos agendados como alarmes do celular.',
+                icon: this.getEventIcon('outro'),
+                vibrate: [200, 100, 200],
+                requireInteraction: false,
+                silent: false,
+                actions: [
+                    {
+                        action: 'start',
+                        title: '✅ Começar a usar'
+                    }
+                ]
+            });
+        }
+    }
+
+    handleURLParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('event');
+        const action = urlParams.get('action');
+        
+        if (eventId && action === 'join') {
+            this.joinEvent(parseInt(eventId));
+            // Limpar URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }
 
     setupEventListeners() {
@@ -48,8 +128,37 @@ class GroupScheduler {
 
         // Configurações de notificação
         document.getElementById('browserNotifications').addEventListener('change', () => this.saveNotificationSettings());
-        document.getElementById('emailNotifications').addEventListener('change', () => this.saveNotificationSettings());
+        
+        // Verificar se emailNotifications existe (compatibilidade)
+        const emailNotifications = document.getElementById('emailNotifications');
+        if (emailNotifications) {
+            emailNotifications.addEventListener('change', () => this.saveNotificationSettings());
+        }
+        
         document.getElementById('notificationTiming').addEventListener('change', () => this.saveNotificationSettings());
+
+        // Novos event listeners para funcionalidades avançadas
+        this.setupAdvancedEventListeners();
+    }
+
+    setupAdvancedEventListeners() {
+        // Adicionar ao calendário (se existir o botão)
+        const addToCalendarBtn = document.getElementById('addToCalendarBtn');
+        if (addToCalendarBtn) {
+            addToCalendarBtn.addEventListener('click', () => this.exportAllEventsToCalendar());
+        }
+
+        // Vibração (se existir o checkbox)
+        const vibrationNotifications = document.getElementById('vibrationNotifications');
+        if (vibrationNotifications) {
+            vibrationNotifications.addEventListener('change', () => this.saveNotificationSettings());
+        }
+
+        // Integração com calendário (se existir o checkbox)
+        const calendarIntegration = document.getElementById('calendarIntegration');
+        if (calendarIntegration) {
+            calendarIntegration.addEventListener('change', () => this.saveNotificationSettings());
+        }
     }
 
     switchTab(tabName) {
@@ -64,11 +173,15 @@ class GroupScheduler {
 
     showModal(modalId) {
         document.getElementById(modalId).style.display = 'block';
+        // Aplicar blur no fundo
+        document.querySelector('.container').style.filter = 'blur(3px)';
     }
 
     hideModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
         this.clearModalInputs(modalId);
+        // Remover blur do fundo
+        document.querySelector('.container').style.filter = 'none';
     }
 
     clearModalInputs(modalId) {
@@ -86,7 +199,7 @@ class GroupScheduler {
         const description = document.getElementById('groupDescription').value.trim();
 
         if (!name) {
-            alert('Por favor, insira um nome para o grupo.');
+            this.showCustomAlert('Por favor, insira um nome para o grupo.', '⚠️');
             return;
         }
 
@@ -106,10 +219,11 @@ class GroupScheduler {
         this.hideModal('createGroupModal');
         
         this.addNotification(`Grupo "${name}" criado com sucesso! 🎉`);
+        this.showCustomAlert(`Grupo "${name}" criado com sucesso!`, '🎉');
     }
 
     deleteGroup(groupId) {
-        if (confirm('Tem certeza que deseja excluir este grupo? Esta ação não pode ser desfeita.')) {
+        if (this.showCustomConfirm('Tem certeza que deseja excluir este grupo? Esta ação não pode ser desfeita.', '🗑️')) {
             this.groups = this.groups.filter(group => group.id !== groupId);
             this.events = this.events.filter(event => event.groupId !== groupId);
             this.saveData();
@@ -130,7 +244,7 @@ class GroupScheduler {
         const email = document.getElementById('memberEmail').value.trim();
 
         if (!name || !email) {
-            alert('Por favor, preencha nome e email do membro.');
+            this.showCustomAlert('Por favor, preencha nome e email do membro.', '⚠️');
             return;
         }
 
@@ -138,7 +252,7 @@ class GroupScheduler {
         if (group) {
             // Verificar se o membro já existe
             if (group.members.some(member => member.email === email)) {
-                alert('Este membro já está no grupo.');
+                this.showCustomAlert('Este membro já está no grupo.', '⚠️');
                 return;
             }
 
@@ -226,13 +340,13 @@ class GroupScheduler {
         const recurring = document.getElementById('eventRecurring').checked;
 
         if (!title || !groupId || !date || !time) {
-            alert('Por favor, preencha todos os campos obrigatórios.');
+            this.showCustomAlert('Por favor, preencha todos os campos obrigatórios.', '⚠️');
             return;
         }
 
         const group = this.groups.find(g => g.id === groupId);
         if (!group) {
-            alert('Grupo não encontrado.');
+            this.showCustomAlert('Grupo não encontrado.', '❌');
             return;
         }
 
@@ -248,7 +362,8 @@ class GroupScheduler {
             recurring,
             createdBy: this.currentUser,
             createdAt: new Date().toISOString(),
-            participants: [this.currentUser]
+            participants: [this.currentUser],
+            notificationSent: false
         };
 
         this.events.push(event);
@@ -262,7 +377,8 @@ class GroupScheduler {
                 const recurringEvent = {
                     ...event,
                     id: Date.now() + i,
-                    date: recurringDate.toISOString().split('T')[0]
+                    date: recurringDate.toISOString().split('T')[0],
+                    notificationSent: false
                 };
                 
                 this.events.push(recurringEvent);
@@ -274,7 +390,17 @@ class GroupScheduler {
         this.hideModal('createEventModal');
         
         this.addNotification(`Evento "${title}" criado para ${new Date(date + 'T' + time).toLocaleString('pt-BR')} 🎯`);
-        this.scheduleNotification(event);
+        
+        // Agendar notificações nativas
+        this.scheduleNativeNotification(event);
+        
+        // Adicionar ao calendário automaticamente se configurado
+        const settings = JSON.parse(localStorage.getItem('notificationSettings')) || {};
+        if (settings.calendarIntegration) {
+            this.addToNativeCalendar(event);
+        }
+
+        this.showCustomAlert(`Evento "${title}" criado com sucesso!`, '🎯');
     }
 
     joinEvent(eventId) {
@@ -298,7 +424,7 @@ class GroupScheduler {
     }
 
     deleteEvent(eventId) {
-        if (confirm('Tem certeza que deseja excluir este evento?')) {
+        if (this.showCustomConfirm('Tem certeza que deseja excluir este evento?', '🗑️')) {
             this.events = this.events.filter(event => event.id !== eventId);
             this.saveData();
             this.renderEvents();
@@ -349,7 +475,7 @@ class GroupScheduler {
                     <h3>${typeIcons[event.type]} ${event.title}</h3>
                     <p>${event.description}</p>
                     <div class="event-info">
-                        <span>📅 ${eventDate.toLocaleDateString('pt-BR')}</span>
+                        <span class="event-date">📅 ${eventDate.toLocaleDateString('pt-BR')}</span>
                         <span>🕐 ${eventDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
                         <span>👥 ${event.groupName}</span>
                         <span>✅ ${event.participants.length} confirmados</span>
@@ -360,6 +486,9 @@ class GroupScheduler {
                             `<button class="btn-small btn-delete" onclick="app.leaveEvent(${event.id})">❌ Cancelar Presença</button>` :
                             `<button class="btn-small btn-join" onclick="app.joinEvent(${event.id})">✅ Confirmar Presença</button>`
                         ) : '<span class="past-label">Evento finalizado</span>'}
+                        <button class="btn-small btn-manage" onclick="app.addToNativeCalendar({id: ${event.id}, title: '${event.title}', description: '${event.description}', date: '${event.date}', time: '${event.time}', groupName: '${event.groupName}'})">
+                            📅 Adicionar ao Calendário
+                        </button>
                         ${event.createdBy === this.currentUser ? 
                             `<button class="btn-small btn-delete" onclick="app.deleteEvent(${event.id})">🗑️ Excluir</button>` : ''
                         }
@@ -394,57 +523,252 @@ class GroupScheduler {
         });
     }
 
-    // NOTIFICAÇÕES
-    requestNotificationPermission() {
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
+    // SISTEMA DE NOTIFICAÇÕES AVANÇADO
+    scheduleNativeNotification(event) {
+        const eventTime = new Date(event.date + 'T' + event.time);
+        const notificationSettings = JSON.parse(localStorage.getItem('notificationSettings')) || { 
+            timing: 15, 
+            vibration: true, 
+            browser: true 
+        };
+        
+        // Múltiplas notificações
+        const notifications = [
+            { time: notificationSettings.timing, text: `em ${notificationSettings.timing} minutos` },
+            { time: 5, text: 'em 5 minutos' },
+            { time: 0, text: 'AGORA' }
+        ];
+
+        notifications.forEach(notification => {
+            const notificationTime = new Date(eventTime.getTime() - (notification.time * 60 * 1000));
+            this.scheduleNotificationAt(event, notificationTime, notification.text);
+        });
+    }
+
+    scheduleNotificationAt(event, notificationTime, timeText) {
+        if (notificationTime > new Date()) {
+            const timeoutDuration = notificationTime.getTime() - new Date().getTime();
+            
+            setTimeout(() => {
+                this.sendNativeNotification(event, timeText);
+            }, timeoutDuration);
         }
     }
 
-    scheduleNotification(event) {
-        const eventTime = new Date(event.date + 'T' + event.time);
-        const notificationSettings = JSON.parse(localStorage.getItem('notificationSettings')) || { timing: 15 };
-        const notificationTime = new Date(eventTime.getTime() - (notificationSettings.timing * 60 * 1000));
-        
-        if (notificationTime > new Date()) {
-            setTimeout(() => {
-                this.showNotification(event);
-            }, notificationTime.getTime() - new Date().getTime());
+    sendNativeNotification(event, timeText) {
+        const settings = JSON.parse(localStorage.getItem('notificationSettings')) || { 
+            browser: true, 
+            vibration: true 
+        };
+
+        if (!settings.browser || Notification.permission !== 'granted') return;
+
+        if ('serviceWorker' in navigator && this.swRegistration) {
+            this.swRegistration.showNotification(`🗓️ ${event.title}`, {
+                body: `Seu evento "${event.title}" começará ${timeText}!\n📍 Grupo: ${event.groupName}\n📝 ${event.description}`,
+                icon: this.getEventIcon(event.type),
+                vibrate: settings.vibration ? [300, 100, 300, 100, 300] : [],
+                requireInteraction: true,
+                silent: false,
+                actions: [
+                    {
+                        action: 'join',
+                        title: '✅ Confirmar Presença'
+                    },
+                    {
+                        action: 'calendar',
+                        title: '📅 Ver no Calendário'
+                    },
+                    {
+                        action: 'snooze',
+                        title: '⏰ Lembrar em 5min'
+                    }
+                ],
+                data: {
+                    eventId: event.id,
+                    url: `/?event=${event.id}`
+                }
+            });
         }
+
+        // Vibração adicional se suportada
+        if (settings.vibration && 'vibrate' in navigator) {
+            navigator.vibrate([300, 100, 300, 100, 300]);
+        }
+
+        this.addNotification(`⏰ Lembrete: "${event.title}" começará ${timeText}!`);
+    }
+
+    getEventIcon(eventType) {
+        const icons = {
+            esporte: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%2327ae60"/><text y="0.9em" font-size="80" x="50%" text-anchor="middle" fill="white">🏃</text></svg>',
+            leitura: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%233498db"/><text y="0.9em" font-size="80" x="50%" text-anchor="middle" fill="white">📚</text></svg>',
+            administracao: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e74c3c"/><text y="0.9em" font-size="80" x="50%" text-anchor="middle" fill="white">⏰</text></svg>',
+            outro: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23667eea"/><text y="0.9em" font-size="80" x="50%" text-anchor="middle" fill="white">📝</text></svg>'
+        };
+        return icons[eventType] || icons.outro;
+    }
+
+    // INTEGRAÇÃO COM CALENDÁRIO NATIVO
+    addToNativeCalendar(event) {
+        const eventTime = new Date(event.date + 'T' + event.time);
+        const endTime = new Date(eventTime.getTime() + (60 * 60 * 1000)); // 1 hora depois
+        
+        const icsContent = this.generateICS(event, eventTime, endTime);
+        
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${event.title}.ics`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        this.addNotification(`📅 Evento "${event.title}" exportado para o calendário!`);
+        this.showCustomAlert('Arquivo de calendário baixado! Abra-o para adicionar ao seu calendário.', '📅');
+    }
+
+    generateICS(event, startTime, endTime) {
+        const formatDate = (date) => {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+
+        return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//GroupScheduler//GroupScheduler//PT
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:${event.id}@groupscheduler.app
+DTSTART:${formatDate(startTime)}
+DTEND:${formatDate(endTime)}
+SUMMARY:${event.title}
+DESCRIPTION:${event.description}\\n\\nGrupo: ${event.groupName}\\n\\nCriado via GroupScheduler
+LOCATION:Grupo ${event.groupName}
+STATUS:CONFIRMED
+SEQUENCE:0
+BEGIN:VALARM
+TRIGGER:-PT15M
+DESCRIPTION:Lembrete: ${event.title}
+ACTION:DISPLAY
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT5M
+DESCRIPTION:Lembrete: ${event.title} em 5 minutos
+ACTION:DISPLAY
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+    }
+
+    exportAllEventsToCalendar() {
+        if (this.events.length === 0) {
+            this.showCustomAlert('Nenhum evento para exportar.', '⚠️');
+            return;
+        }
+
+        let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//GroupScheduler//GroupScheduler//PT
+CALSCALE:GREGORIAN
+METHOD:PUBLISH`;
+
+        this.events.forEach(event => {
+            const eventTime = new Date(event.date + 'T' + event.time);
+            const endTime = new Date(eventTime.getTime() + (60 * 60 * 1000));
+            
+            const formatDate = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            };
+
+            icsContent += `
+BEGIN:VEVENT
+UID:${event.id}@groupscheduler.app
+DTSTART:${formatDate(eventTime)}
+DTEND:${formatDate(endTime)}
+SUMMARY:${event.title}
+DESCRIPTION:${event.description}\\n\\nGrupo: ${event.groupName}\\n\\nCriado via GroupScheduler
+LOCATION:Grupo ${event.groupName}
+STATUS:CONFIRMED
+SEQUENCE:0
+BEGIN:VALARM
+TRIGGER:-PT15M
+DESCRIPTION:Lembrete: ${event.title}
+ACTION:DISPLAY
+END:VALARM
+END:VEVENT`;
+        });
+
+        icsContent += `
+END:VCALENDAR`;
+
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'GroupScheduler-Eventos.ics';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        this.addNotification(`📅 ${this.events.length} eventos exportados para o calendário!`);
+        this.showCustomAlert('Todos os eventos foram exportados para o calendário!', '📅');
+    }
+
+    // VERIFICADOR DE NOTIFICAÇÕES AVANÇADO
+    startAdvancedNotificationChecker() {
+        // Verificar a cada 30 segundos
+        setInterval(() => {
+            this.checkPendingNotifications();
+        }, 30000);
+
+        // Verificar quando o app volta ao foco
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                this.checkPendingNotifications();
+            }
+        });
+
+        // Verificar quando o app é aberto
+        window.addEventListener('focus', () => {
+            this.checkPendingNotifications();
+        });
+    }
+
+    checkPendingNotifications() {
+        const now = new Date();
+        
+        this.events.forEach(event => {
+            if (event.notificationSent) return;
+            
+            const eventTime = new Date(event.date + 'T' + event.time);
+            const notificationSettings = JSON.parse(localStorage.getItem('notificationSettings')) || { timing: 15 };
+            const notificationTime = new Date(eventTime.getTime() - (notificationSettings.timing * 60 * 1000));
+            
+            if (Math.abs(now.getTime() - notificationTime.getTime()) < 60000) { // 1 minuto de tolerância
+                this.sendNativeNotification(event, `em ${notificationSettings.timing} minutos`);
+                event.notificationSent = true;
+                this.saveData();
+            }
+        });
+    }
+
+    // NOTIFICAÇÕES LEGADAS (compatibilidade)
+    scheduleNotification(event) {
+        this.scheduleNativeNotification(event);
     }
 
     showNotification(event) {
-        const browserNotifications = document.getElementById('browserNotifications').checked;
-        
-        if (browserNotifications && 'Notification' in window && Notification.permission === 'granted') {
-            new Notification(`📅 ${event.title}`, {
-                body: `O evento "${event.title}" começará em breve!\n${event.description}`,
-                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">🗓️</text></svg>',
-                requireInteraction: true
-            });
-        }
-        
-        this.addNotification(`⏰ Lembrete: "${event.title}" começará em breve!`);
+        this.sendNativeNotification(event, 'em breve');
     }
 
     startNotificationChecker() {
-        setInterval(() => {
-            const now = new Date();
-            const notificationSettings = JSON.parse(localStorage.getItem('notificationSettings')) || { timing: 15 };
-            
-            this.events.forEach(event => {
-                const eventTime = new Date(event.date + 'T' + event.time);
-                const notificationTime = new Date(eventTime.getTime() - (notificationSettings.timing * 60 * 1000));
-                
-                if (Math.abs(now.getTime() - notificationTime.getTime()) < 30000) { // 30 segundos de tolerância
-                    if (!event.notificationSent) {
-                        this.showNotification(event);
-                        event.notificationSent = true;
-                        this.saveData();
-                    }
-                }
-            });
-        }, 30000); // Verificar a cada 30 segundos
+        this.startAdvancedNotificationChecker();
     }
 
     addNotification(message) {
@@ -461,7 +785,7 @@ class GroupScheduler {
     }
 
     clearNotifications() {
-        if (confirm('Tem certeza que deseja limpar todas as notificações?')) {
+        if (this.showCustomConfirm('Tem certeza que deseja limpar todas as notificações?', '🗑️')) {
             this.notifications = [];
             this.saveData();
             this.renderNotifications();
@@ -488,28 +812,74 @@ class GroupScheduler {
 
     saveNotificationSettings() {
         const settings = {
-            browser: document.getElementById('browserNotifications').checked,
-            email: document.getElementById('emailNotifications').checked,
-            timing: parseInt(document.getElementById('notificationTiming').value)
+            browser: document.getElementById('browserNotifications')?.checked || true,
+            vibration: document.getElementById('vibrationNotifications')?.checked || true,
+            calendarIntegration: document.getElementById('calendarIntegration')?.checked || false,
+            timing: parseInt(document.getElementById('notificationTiming')?.value || 15)
         };
         
         localStorage.setItem('notificationSettings', JSON.stringify(settings));
+        this.addNotification('⚙️ Configurações de notificação salvas!');
     }
 
     shareApp() {
         if (navigator.share) {
             navigator.share({
                 title: 'GroupScheduler - Agenda Colaborativa',
-                text: 'Organize eventos em grupo de forma colaborativa!',
+                text: 'Organize eventos em grupo de forma colaborativa com notificações nativas!',
                 url: window.location.href
             });
         } else {
-            // Fallback para navegadores que não suportam Web Share API
             const url = window.location.href;
             navigator.clipboard.writeText(url).then(() => {
-                alert('Link do aplicativo copiado para a área de transferência! 📋');
+                this.showCustomAlert('Link do aplicativo copiado para a área de transferência!', '📋');
             });
         }
+    }
+
+    // UTILITÁRIOS DE UI
+    showCustomAlert(message, icon = '💬') {
+        // Criar elemento de alerta personalizado
+        const alert = document.createElement('div');
+        alert.className = 'custom-alert';
+        alert.innerHTML = `
+            <div class="alert-content">
+                <span class="alert-icon">${icon}</span>
+                <span class="alert-message">${message}</span>
+            </div>
+        `;
+        
+        // Adicionar estilos inline para funcionar sem CSS adicional
+        alert.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 25px 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            min-width: 300px;
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+        `;
+        
+        document.body.appendChild(alert);
+        
+        // Remover após 3 segundos
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        }, 3000);
+    }
+
+    showCustomConfirm(message, icon = '❓') {
+        return confirm(`${icon} ${message}`);
     }
 
     saveData() {
@@ -521,3 +891,52 @@ class GroupScheduler {
 
 // Inicializar aplicativo
 const app = new GroupScheduler();
+
+// PWA Install Prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    const installBtn = document.createElement('button');
+    installBtn.textContent = '📱 Instalar App';
+    installBtn.className = 'btn-primary';
+    installBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        border-radius: 50px;
+        padding: 15px 20px;
+        font-weight: 700;
+        box-shadow: 0 10px 30px rgba(0, 212, 170, 0.4);
+    `;
+    
+    installBtn.addEventListener('click', () => {
+        installBtn.style.display = 'none';
+        deferredPrompt.prompt();
+        
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('Usuário instalou o PWA');
+                app.addNotification('🎉 App instalado com sucesso!');
+            }
+            deferredPrompt = null;
+        });
+    });
+    
+    document.body.appendChild(installBtn);
+});
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(registration => {
+                console.log('SW registrado:', registration);
+            })
+            .catch(error => {
+                console.log('SW falhou:', error);
+            });
+    });
+}
