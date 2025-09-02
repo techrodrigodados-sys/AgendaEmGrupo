@@ -636,7 +636,7 @@ class GroupScheduler {
 
         return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//GroupScheduler//GroupScheduler//PT
+PRODID:-//OrganizadorRola//OrganizadorRola//PT
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
@@ -644,7 +644,7 @@ UID:${event.id}@groupscheduler.app
 DTSTART:${formatDate(startTime)}
 DTEND:${formatDate(endTime)}
 SUMMARY:${event.title}
-DESCRIPTION:${event.description}\\n\\nGrupo: ${event.groupName}\\n\\nCriado via GroupScheduler
+DESCRIPTION:${event.description}\\n\\nGrupo: ${event.groupName}\\n\\nCriado via Organizador Rola
 LOCATION:Grupo ${event.groupName}
 STATUS:CONFIRMED
 SEQUENCE:0
@@ -670,7 +670,7 @@ END:VCALENDAR`;
 
         let icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//GroupScheduler//GroupScheduler//PT
+PRODID:-//OrganizadorRola//OrganizadorRola//PT
 CALSCALE:GREGORIAN
 METHOD:PUBLISH`;
 
@@ -688,7 +688,7 @@ UID:${event.id}@groupscheduler.app
 DTSTART:${formatDate(eventTime)}
 DTEND:${formatDate(endTime)}
 SUMMARY:${event.title}
-DESCRIPTION:${event.description}\\n\\nGrupo: ${event.groupName}\\n\\nCriado via GroupScheduler
+DESCRIPTION:${event.description}\\n\\nGrupo: ${event.groupName}\\n\\nCriado via Organizador Rola
 LOCATION:Grupo ${event.groupName}
 STATUS:CONFIRMED
 SEQUENCE:0
@@ -823,8 +823,8 @@ END:VCALENDAR`;
     shareApp() {
         if (navigator.share) {
             navigator.share({
-                title: 'GroupScheduler - Agenda Colaborativa',
-                text: 'Organize eventos em grupo de forma colaborativa com notificações nativas!',
+                title: 'Organizador Rola - Agenda Colaborativa',
+                text: 'Organize eventos em grupo de forma colaborativa com o Organizador Rola!',
                 url: window.location.href
             });
         } else {
@@ -897,7 +897,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     deferredPrompt = e;
     
     const installBtn = document.createElement('button');
-    installBtn.textContent = '📱 Instalar App';
+    installBtn.textContent = '📱 Instalar Organizador Rola';
     installBtn.className = 'btn-primary';
     installBtn.style.cssText = `
         position: fixed;
@@ -910,14 +910,14 @@ window.addEventListener('beforeinstallprompt', (e) => {
         box-shadow: 0 10px 30px rgba(0, 212, 170, 0.4);
     `;
     
-    installBtn.addEventListener('click', () => {
+        installBtn.addEventListener('click', () => {
         installBtn.style.display = 'none';
         deferredPrompt.prompt();
         
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
                 console.log('Usuário instalou o PWA');
-                app.addNotification('🎉 App instalado com sucesso!');
+                app.addNotification('🎉 Organizador Rola instalado com sucesso!');
             }
             deferredPrompt = null;
         });
@@ -938,4 +938,5 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+
 
