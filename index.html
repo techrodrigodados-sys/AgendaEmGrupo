@@ -62,13 +62,16 @@
                 <div class="modal-content">
                     <h3>Gerenciar Membros</h3>
                     <div class="add-member">
+                        <h4>➕ Adicionar Novo Membro</h4>
                         <input type="text" id="memberName" placeholder="Nome do membro">
-                        <input type="email" id="memberEmail" placeholder="Email do membro">
-                        <button id="addMemberBtn" class="btn-primary">Adicionar</button>
-                    </div>
-                    <div id="membersList" class="members-list"></div>
-                    <div class="modal-actions">
-                        <button id="closeMembersBtn" class="btn-secondary">Fechar</button>
+                        <input type="email" id="memberEmail" placeholder="Email (para convites de calendário)">
+                        <input type="tel" id="memberPhone" placeholder="Telefone (WhatsApp) - opcional">
+                        <select id="memberPreference">
+                            <option value="email">Prefere receber por Email</option>
+                            <option value="whatsapp">Prefere receber por WhatsApp</option>
+                            <option value="both">Email + WhatsApp</option>
+                        </select>
+                        <button class="btn-primary" id="addMemberBtn">Adicionar Membro</button>
                     </div>
                 </div>
             </div>
@@ -173,3 +176,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+
