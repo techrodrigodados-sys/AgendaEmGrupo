@@ -180,8 +180,6 @@ class GroupScheduler {
     hideModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
         this.clearModalInputs(modalId);
-        // Remover blur do fundo
-        document.querySelector('.container').style.filter = 'none';
     }
 
     clearModalInputs(modalId) {
@@ -940,3 +938,4 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+
