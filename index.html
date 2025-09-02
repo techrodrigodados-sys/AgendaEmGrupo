@@ -12,168 +12,342 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Organizador Rola">
+    <meta name="description" content="Organize eventos em grupo de forma colaborativa com o Organizador Rola">
     
-    <!-- Ícones Personalizados -->
+    <!-- Ícones Otimizados -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%23667eea'/><stop offset='50%25' style='stop-color:%23764ba2'/><stop offset='100%25' style='stop-color:%23f093fb'/></linearGradient></defs><rect width='100' height='100' fill='url(%23bg)' rx='20'/><circle cx='50' cy='25' r='8' fill='white'/><rect x='35' y='40' width='30' height='4' fill='white' rx='2'/><rect x='25' y='50' width='50' height='4' fill='white' rx='2'/><rect x='30' y='60' width='40' height='4' fill='white' rx='2'/><circle cx='20' cy='75' r='3' fill='white'/><circle cx='35' cy='75' r='3' fill='white'/><circle cx='50' cy='75' r='3' fill='white'/><circle cx='65' cy='75' r='3' fill='white'/><circle cx='80' cy='75' r='3' fill='white'/><text x='50' y='90' text-anchor='middle' fill='white' font-size='8' font-weight='bold'>ROLA</text></svg>">
-    
-    <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><defs><linearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%23667eea'/><stop offset='50%25' style='stop-color:%23764ba2'/><stop offset='100%25' style='stop-color:%23f093fb'/></linearGradient></defs><rect width='180' height='180' fill='url(%23bg)' rx='40'/><circle cx='90' cy='45' r='15' fill='white'/><rect x='60' y='75' width='60' height='8' fill='white' rx='4'/><rect x='45' y='90' width='90' height='8' fill='white' rx='4'/><rect x='55' y='105' width='70' height='8' fill='white' rx='4'/><circle cx='35' cy='135' r='6' fill='white'/><circle cx='60' cy='135' r='6' fill='white'/><circle cx='90' cy='135' r='6' fill='white'/><circle cx='120' cy='135' r='6' fill='white'/><circle cx='145' cy='135' r='6' fill='white'/><text x='90' y='165' text-anchor='middle' fill='white' font-size='16' font-weight='bold'>ORGANIZADOR ROLA</text></svg>">
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>🎯 Organizador Rola</h2>
+            <p>Carregando sua agenda colaborativa...</p>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <h1>🎯 Organizador Rola</h1>
             <div class="user-info">
                 <span id="userName">Rodrigo</span>
-                <button id="shareAppBtn">📤 Compartilhar App</button>
+                <div class="app-buttons">
+                    <button id="shareAppBtn" class="btn-secondary" title="Compartilhar aplicativo">
+                        📤 Compartilhar
+                    </button>
+                    <button id="installAppBtn" class="btn-primary" style="display: none;" title="Instalar como aplicativo">
+                        📱 Instalar App
+                    </button>
+                </div>
             </div>
         </header>
 
-        <nav class="tabs">
-            <button class="tab active" data-tab="groups">👥 Grupos</button>
-            <button class="tab" data-tab="agenda">📅 Agenda</button>
-            <button class="tab" data-tab="notifications">🔔 Notificações</button>
+        <nav class="tabs" role="tablist">
+            <button class="tab active" data-tab="groups" role="tab" aria-selected="true" aria-controls="groups">
+                👥 Grupos
+            </button>
+            <button class="tab" data-tab="agenda" role="tab" aria-selected="false" aria-controls="agenda">
+                📅 Agenda
+            </button>
+            <button class="tab" data-tab="notifications" role="tab" aria-selected="false" aria-controls="notifications">
+                🔔 Notificações
+            </button>
         </nav>
 
         <!-- Aba Grupos -->
-        <div id="groups" class="tab-content active">
+        <div id="groups" class="tab-content active" role="tabpanel" aria-labelledby="groups-tab">
             <div class="section-header">
                 <h2>Meus Grupos</h2>
-                <button id="createGroupBtn" class="btn-primary">+ Criar Grupo</button>
+                <button id="createGroupBtn" class="btn-primary" aria-label="Criar novo grupo">
+                    + Criar Grupo
+                </button>
             </div>
-            
-            <div id="groupsList" class="groups-list"></div>
-            
+            <div id="groupsList" class="groups-list" role="list">
+                <!-- Grupos serão carregados aqui dinamicamente -->
+                <div id="noGroupsMessage" class="empty-state" style="display: none;">
+                    <div class="empty-icon">👥</div>
+                    <h3>Nenhum grupo ainda</h3>
+                    <p>Crie seu primeiro grupo para começar a organizar eventos!</p>
+                </div>
+            </div>
+
             <!-- Modal Criar Grupo -->
-            <div id="createGroupModal" class="modal">
+            <div id="createGroupModal" class="modal" role="dialog" aria-labelledby="createGroupTitle" aria-hidden="true">
+                <div class="modal-overlay" onclick="app.hideModal('createGroupModal')"></div>
                 <div class="modal-content">
-                    <h3>Criar Novo Grupo</h3>
-                    <input type="text" id="groupName" placeholder="Nome do grupo">
-                    <textarea id="groupDescription" placeholder="Descrição do grupo"></textarea>
-                    <div class="modal-actions">
-                        <button id="saveGroupBtn" class="btn-primary">Criar</button>
-                        <button id="cancelGroupBtn" class="btn-secondary">Cancelar</button>
+                    <div class="modal-header">
+                        <h3 id="createGroupTitle">Criar Novo Grupo</h3>
+                        <button class="modal-close" onclick="app.hideModal('createGroupModal')" aria-label="Fechar modal">×</button>
                     </div>
+                    <form id="createGroupForm" class="modal-body">
+                        <div class="form-group">
+                            <label for="groupName">Nome do grupo *</label>
+                            <input type="text" id="groupName" placeholder="Ex: Futebol da galera" required maxlength="50">
+                        </div>
+                        <div class="form-group">
+                            <label for="groupDescription">Descrição do grupo</label>
+                            <textarea id="groupDescription" placeholder="Descreva o propósito do grupo..." maxlength="200"></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" id="saveGroupBtn" class="btn-primary">Criar Grupo</button>
+                            <button type="button" id="cancelGroupBtn" class="btn-secondary">Cancelar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
             <!-- Modal Gerenciar Membros -->
-            <div id="membersModal" class="modal">
-                <div class="modal-content">
-                    <h3>Gerenciar Membros</h3>
-                    <div class="add-member">
-                        <h4>➕ Adicionar Novo Membro</h4>
-                        <input type="text" id="memberName" placeholder="Nome do membro">
-                        <input type="email" id="memberEmail" placeholder="Email (para convites de calendário)">
-                        <input type="tel" id="memberPhone" placeholder="Telefone (WhatsApp) - opcional">
-                        <select id="memberPreference">
-                            <option value="email">Prefere receber por Email</option>
-                            <option value="whatsapp">Prefere receber por WhatsApp</option>
-                            <option value="both">Email + WhatsApp</option>
-                        </select>
-                        <button class="btn-primary" id="addMemberBtn">Adicionar Membro</button>
+            <div id="membersModal" class="modal" role="dialog" aria-labelledby="membersTitle" aria-hidden="true">
+                <div class="modal-overlay" onclick="app.hideModal('membersModal')"></div>
+                <div class="modal-content large-modal">
+                    <div class="modal-header">
+                        <h3 id="membersTitle">Gerenciar Membros</h3>
+                        <button class="modal-close" onclick="app.hideModal('membersModal')" aria-label="Fechar modal">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="members-section">
+                            <h4>👥 Membros Atuais</h4>
+                            <div id="currentMembersList" class="members-list"></div>
+                        </div>
+                        
+                        <div class="add-member-section">
+                            <h4>➕ Adicionar Novo Membro</h4>
+                            <form id="addMemberForm">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="memberName">Nome *</label>
+                                        <input type="text" id="memberName" placeholder="Nome completo" required maxlength="50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="memberEmail">Email</label>
+                                        <input type="email" id="memberEmail" placeholder="email@exemplo.com">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="memberPhone">WhatsApp</label>
+                                        <input type="tel" id="memberPhone" placeholder="(11) 99999-9999">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="memberPreference">Preferência de contato</label>
+                                        <select id="memberPreference">
+                                            <option value="email">📧 Email</option>
+                                            <option value="whatsapp">💚 WhatsApp</option>
+                                            <option value="both">📧💚 Ambos</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn-primary" id="addMemberBtn">Adicionar Membro</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Aba Agenda -->
-        <div id="agenda" class="tab-content">
+        <div id="agenda" class="tab-content" role="tabpanel" aria-labelledby="agenda-tab">
             <div class="section-header">
                 <h2>Agenda Colaborativa</h2>
-                <button id="createEventBtn" class="btn-primary">+ Criar Evento</button>
+                <button id="createEventBtn" class="btn-primary" aria-label="Criar novo evento">
+                    + Criar Evento
+                </button>
             </div>
             
             <div class="filters">
-                <select id="groupFilter">
-                    <option value="">Todos os grupos</option>
-                </select>
-                <select id="typeFilter">
-                    <option value="">Todos os tipos</option>
-                    <option value="esporte">🏃 Esporte</option>
-                    <option value="leitura">📚 Leitura</option>
-                    <option value="administracao">⏰ Administração do Tempo</option>
-                    <option value="outro">📝 Outro</option>
-                </select>
-            </div>
-            
-            <div id="eventsList" class="events-list"></div>
-            
-            <!-- Modal Criar Evento -->
-            <div id="createEventModal" class="modal">
-                <div class="modal-content">
-                    <h3>Criar Novo Evento</h3>
-                    <input type="text" id="eventTitle" placeholder="Título do evento">
-                    <textarea id="eventDescription" placeholder="Descrição do evento"></textarea>
-                    
-                    <select id="eventGroup">
-                        <option value="">Selecione um grupo</option>
+                <div class="filter-group">
+                    <label for="groupFilter">Filtrar por grupo:</label>
+                    <select id="groupFilter">
+                        <option value="">Todos os grupos</option>
                     </select>
-                    
-                    <select id="eventType">
+                </div>
+                <div class="filter-group">
+                    <label for="typeFilter">Filtrar por tipo:</label>
+                    <select id="typeFilter">
+                        <option value="">Todos os tipos</option>
                         <option value="esporte">🏃 Esporte</option>
                         <option value="leitura">📚 Leitura</option>
                         <option value="administracao">⏰ Administração do Tempo</option>
                         <option value="outro">📝 Outro</option>
                     </select>
-                    
-                    <input type="date" id="eventDate">
-                    <input type="time" id="eventTime">
-                    
-                    <label>
-                        <input type="checkbox" id="eventRecurring">
-                        Evento recorrente (semanal)
-                    </label>
-                    
-                    <div class="modal-actions">
-                        <button id="saveEventBtn" class="btn-primary">Criar Evento</button>
-                        <button id="cancelEventBtn" class="btn-secondary">Cancelar</button>
+                </div>
+            </div>
+
+            <div id="eventsList" class="events-list" role="list">
+                <!-- Eventos serão carregados aqui dinamicamente -->
+                <div id="noEventsMessage" class="empty-state" style="display: none;">
+                    <div class="empty-icon">📅</div>
+                    <h3>Nenhum evento agendado</h3>
+                    <p>Crie seu primeiro evento e convide seus amigos!</p>
+                </div>
+            </div>
+
+            <!-- Modal Criar Evento -->
+            <div id="createEventModal" class="modal" role="dialog" aria-labelledby="createEventTitle" aria-hidden="true">
+                <div class="modal-overlay" onclick="app.hideModal('createEventModal')"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="createEventTitle">Criar Novo Evento</h3>
+                        <button class="modal-close" onclick="app.hideModal('createEventModal')" aria-label="Fechar modal">×</button>
                     </div>
+                    <form id="createEventForm" class="modal-body">
+                        <div class="form-group">
+                            <label for="eventTitle">Título do evento *</label>
+                            <input type="text" id="eventTitle" placeholder="Ex: Futebol no clube" required maxlength="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="eventDescription">Descrição</label>
+                            <textarea id="eventDescription" placeholder="Detalhes sobre o evento..." maxlength="300"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventGroup">Grupo *</label>
+                                <select id="eventGroup" required>
+                                    <option value="">Selecione um grupo</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventType">Tipo de evento</label>
+                                <select id="eventType">
+                                    <option value="esporte">🏃 Esporte</option>
+                                    <option value="leitura">📚 Leitura</option>
+                                    <option value="administracao">⏰ Administração do Tempo</option>
+                                    <option value="outro">📝 Outro</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventDate">Data *</label>
+                                <input type="date" id="eventDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventTime">Horário *</label>
+                                <input type="time" id="eventTime" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="eventRecurring">
+                                <span class="checkmark"></span>
+                                Evento recorrente (semanal)
+                            </label>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" id="saveEventBtn" class="btn-primary">Criar Evento</button>
+                            <button type="button" id="cancelEventBtn" class="btn-secondary">Cancelar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
 
         <!-- Aba Notificações -->
-        <div id="notifications" class="tab-content">
+        <div id="notifications" class="tab-content" role="tabpanel" aria-labelledby="notifications-tab">
             <div class="section-header">
-                <h2>Notificações</h2>
-                <button id="clearNotificationsBtn" class="btn-secondary">Limpar Todas</button>
+                <h2>Notificações e Configurações</h2>
+                <button id="clearNotificationsBtn" class="btn-secondary">🗑️ Limpar Todas</button>
             </div>
             
             <div class="notification-settings">
-                <h3>Configurações de Notificação</h3>
-                <label>
-                    <input type="checkbox" id="browserNotifications" checked>
-                    Notificações nativas do celular
-                </label>
-                <label>
-                    <input type="checkbox" id="vibrationNotifications" checked>
-                    Vibração no celular
-                </label>
-                <label>
-                    <input type="checkbox" id="calendarIntegration">
-                    Adicionar automaticamente ao calendário
-                </label>
-                <label>
-                    Avisar com antecedência:
-                    <select id="notificationTiming">
-                        <option value="5">5 minutos</option>
-                        <option value="15" selected>15 minutos</option>
-                        <option value="30">30 minutos</option>
-                        <option value="60">1 hora</option>
-                        <option value="120">2 horas</option>
-                    </select>
-                </label>
-                <button id="addToCalendarBtn" class="btn-primary" style="margin-top: 15px;">
-                    📅 Exportar Todos os Eventos para Calendário
-                </button>
+                <h3>⚙️ Configurações de Notificação</h3>
+                <div class="settings-grid">
+                    <label class="setting-item">
+                        <input type="checkbox" id="browserNotifications" checked>
+                        <span class="setting-info">
+                            <strong>🔔 Notificações Push</strong>
+                            <small>Receber alertas nativos no celular</small>
+                        </span>
+                    </label>
+                    
+                    <label class="setting-item">
+                        <input type="checkbox" id="vibrationNotifications" checked>
+                        <span class="setting-info">
+                            <strong>📳 Vibração</strong>
+                            <small>Vibrar quando receber notificações</small>
+                        </span>
+                    </label>
+                    
+                    <label class="setting-item">
+                        <input type="checkbox" id="calendarIntegration">
+                        <span class="setting-info">
+                            <strong>📅 Integração com Calendário</strong>
+                            <small>Adicionar eventos automaticamente</small>
+                        </span>
+                    </label>
+                    
+                    <div class="setting-item">
+                        <label for="notificationTiming">
+                            <strong>⏰ Tempo de Antecedência</strong>
+                            <small>Quando ser avisado antes do evento</small>
+                        </label>
+                        <select id="notificationTiming">
+                            <option value="5">5 minutos antes</option>
+                            <option value="15" selected>15 minutos antes</option>
+                            <option value="30">30 minutos antes</option>
+                            <option value="60">1 hora antes</option>
+                            <option value="120">2 horas antes</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="addToCalendarBtn" class="btn-primary">
+                        📅 Exportar Todos os Eventos
+                    </button>
+                    <button id="testNotificationBtn" class="btn-secondary">
+                        🧪 Testar Notificação
+                    </button>
+                </div>
             </div>
-            
-            <div id="notificationsList" class="notifications-list"></div>
+
+            <div class="notifications-section">
+                <h3>📋 Histórico de Notificações</h3>
+                <div id="notificationsList" class="notifications-list">
+                    <!-- Notificações serão carregadas aqui dinamicamente -->
+                    <div id="noNotificationsMessage" class="empty-state" style="display: none;">
+                        <div class="empty-icon">🔔</div>
+                        <h3>Nenhuma notificação ainda</h3>
+                        <p>As notificações dos seus eventos aparecerão aqui.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- PWA Install Prompt (será mostrado via JS) -->
+    <div id="installPrompt" class="install-prompt" style="display: none;">
+        <div class="install-content">
+            <div class="install-icon">📱</div>
+            <div class="install-text">
+                <h3>Instalar Organizador Rola</h3>
+                <p>Tenha acesso rápido direto da tela inicial!</p>
+            </div>
+            <div class="install-actions">
+                <button id="installPromptBtn" class="btn-primary">Instalar</button>
+                <button id="dismissInstallBtn" class="btn-secondary">Agora não</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="app.js"></script>
+    
+    <script>
+        // Esconder loading screen quando página carregar
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 500);
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
-
