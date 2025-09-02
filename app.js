@@ -70,7 +70,7 @@ class GroupScheduler {
 
     showWelcomeNotification() {
         if ('serviceWorker' in navigator && this.swRegistration && Notification.permission === 'granted') {
-            this.swRegistration.showNotification('🎉 GroupScheduler Ativado!', {
+            this.swRegistration.showNotification('🎉 Organizador Rola Ativado!', {
                 body: 'Você receberá notificações dos seus eventos agendados como alarmes do celular.',
                 icon: this.getEventIcon('outro'),
                 vibrate: [200, 100, 200],
@@ -173,13 +173,13 @@ class GroupScheduler {
 
     showModal(modalId) {
         document.getElementById(modalId).style.display = 'block';
-        // Aplicar blur no fundo
-        document.querySelector('.container').style.filter = 'blur(3px)';
+        // REMOVIDO: blur no fundo
     }
 
     hideModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
         this.clearModalInputs(modalId);
+        // REMOVIDO: remover blur
     }
 
     clearModalInputs(modalId) {
@@ -215,7 +215,6 @@ class GroupScheduler {
         this.renderGroups();
         this.populateGroupSelects();
         this.hideModal('createGroupModal');
-        
         this.addNotification(`Grupo "${name}" criado com sucesso! 🎉`);
         this.showCustomAlert(`Grupo "${name}" criado com sucesso!`, '🎉');
     }
@@ -261,7 +260,6 @@ class GroupScheduler {
             
             document.getElementById('memberName').value = '';
             document.getElementById('memberEmail').value = '';
-            
             this.addNotification(`${name} foi adicionado ao grupo "${group.name}"`);
         }
     }
@@ -365,7 +363,7 @@ class GroupScheduler {
         };
 
         this.events.push(event);
-        
+
         // Se for recorrente, criar eventos para as próximas 4 semanas
         if (recurring) {
             for (let i = 1; i <= 4; i++) {
@@ -378,7 +376,6 @@ class GroupScheduler {
                     date: recurringDate.toISOString().split('T')[0],
                     notificationSent: false
                 };
-                
                 this.events.push(recurringEvent);
             }
         }
@@ -386,7 +383,6 @@ class GroupScheduler {
         this.saveData();
         this.renderEvents();
         this.hideModal('createEventModal');
-        
         this.addNotification(`Evento "${title}" criado para ${new Date(date + 'T' + time).toLocaleString('pt-BR')} 🎯`);
         
         // Agendar notificações nativas
@@ -397,7 +393,7 @@ class GroupScheduler {
         if (settings.calendarIntegration) {
             this.addToNativeCalendar(event);
         }
-
+        
         this.showCustomAlert(`Evento "${title}" criado com sucesso!`, '🎯');
     }
 
@@ -467,7 +463,7 @@ class GroupScheduler {
             const eventDate = new Date(event.date + 'T' + event.time);
             const isParticipant = event.participants.includes(this.currentUser);
             const isPast = eventDate < new Date();
-            
+
             return `
                 <div class="event-card ${isPast ? 'past-event' : ''}">
                     <h3>${typeIcons[event.type]} ${event.title}</h3>
@@ -480,14 +476,14 @@ class GroupScheduler {
                     </div>
                     ${event.recurring ? '<div class="recurring-badge">🔄 Evento Recorrente</div>' : ''}
                     <div class="event-actions">
-                        ${!isPast ? (isParticipant ? 
+                        ${!isPast ? (isParticipant ?
                             `<button class="btn-small btn-delete" onclick="app.leaveEvent(${event.id})">❌ Cancelar Presença</button>` :
                             `<button class="btn-small btn-join" onclick="app.joinEvent(${event.id})">✅ Confirmar Presença</button>`
                         ) : '<span class="past-label">Evento finalizado</span>'}
                         <button class="btn-small btn-manage" onclick="app.addToNativeCalendar({id: ${event.id}, title: '${event.title}', description: '${event.description}', date: '${event.date}', time: '${event.time}', groupName: '${event.groupName}'})">
                             📅 Adicionar ao Calendário
                         </button>
-                        ${event.createdBy === this.currentUser ? 
+                        ${event.createdBy === this.currentUser ?
                             `<button class="btn-small btn-delete" onclick="app.deleteEvent(${event.id})">🗑️ Excluir</button>` : ''
                         }
                     </div>
@@ -524,12 +520,12 @@ class GroupScheduler {
     // SISTEMA DE NOTIFICAÇÕES AVANÇADO
     scheduleNativeNotification(event) {
         const eventTime = new Date(event.date + 'T' + event.time);
-        const notificationSettings = JSON.parse(localStorage.getItem('notificationSettings')) || { 
-            timing: 15, 
-            vibration: true, 
-            browser: true 
+        const notificationSettings = JSON.parse(localStorage.getItem('notificationSettings')) || {
+            timing: 15,
+            vibration: true,
+            browser: true
         };
-        
+
         // Múltiplas notificações
         const notifications = [
             { time: notificationSettings.timing, text: `em ${notificationSettings.timing} minutos` },
@@ -546,7 +542,6 @@ class GroupScheduler {
     scheduleNotificationAt(event, notificationTime, timeText) {
         if (notificationTime > new Date()) {
             const timeoutDuration = notificationTime.getTime() - new Date().getTime();
-            
             setTimeout(() => {
                 this.sendNativeNotification(event, timeText);
             }, timeoutDuration);
@@ -554,9 +549,9 @@ class GroupScheduler {
     }
 
     sendNativeNotification(event, timeText) {
-        const settings = JSON.parse(localStorage.getItem('notificationSettings')) || { 
-            browser: true, 
-            vibration: true 
+        const settings = JSON.parse(localStorage.getItem('notificationSettings')) || {
+            browser: true,
+            vibration: true
         };
 
         if (!settings.browser || Notification.permission !== 'granted') return;
@@ -611,12 +606,10 @@ class GroupScheduler {
     addToNativeCalendar(event) {
         const eventTime = new Date(event.date + 'T' + event.time);
         const endTime = new Date(eventTime.getTime() + (60 * 60 * 1000)); // 1 hora depois
-        
         const icsContent = this.generateICS(event, eventTime, endTime);
         
         const blob = new Blob([icsContent], { type: 'text/calendar' });
         const url = URL.createObjectURL(blob);
-        
         const link = document.createElement('a');
         link.href = url;
         link.download = `${event.title}.ics`;
@@ -640,7 +633,7 @@ PRODID:-//OrganizadorRola//OrganizadorRola//PT
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
-UID:${event.id}@groupscheduler.app
+UID:${event.id}@organizadorrola.app
 DTSTART:${formatDate(startTime)}
 DTEND:${formatDate(endTime)}
 SUMMARY:${event.title}
@@ -684,7 +677,7 @@ METHOD:PUBLISH`;
 
             icsContent += `
 BEGIN:VEVENT
-UID:${event.id}@groupscheduler.app
+UID:${event.id}@organizadorrola.app
 DTSTART:${formatDate(eventTime)}
 DTEND:${formatDate(endTime)}
 SUMMARY:${event.title}
@@ -705,10 +698,9 @@ END:VCALENDAR`;
 
         const blob = new Blob([icsContent], { type: 'text/calendar' });
         const url = URL.createObjectURL(blob);
-        
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'GroupScheduler-Eventos.ics';
+        link.download = 'OrganizadorRola-Eventos.ics';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -821,18 +813,50 @@ END:VCALENDAR`;
     }
 
     shareApp() {
+        const appUrl = window.location.href;
+        const appName = 'Organizador Rola';
+        const appDescription = 'Organize eventos em grupo de forma colaborativa!';
+        
         if (navigator.share) {
             navigator.share({
-                title: 'Organizador Rola - Agenda Colaborativa',
-                text: 'Organize eventos em grupo de forma colaborativa com o Organizador Rola!',
-                url: window.location.href
-            });
+                title: appName,
+                text: appDescription,
+                url: appUrl
+            }).catch(err => console.log('Erro ao compartilhar:', err));
         } else {
-            const url = window.location.href;
-            navigator.clipboard.writeText(url).then(() => {
-                this.showCustomAlert('Link do aplicativo copiado para a área de transferência!', '📋');
-            });
+            this.showShareOptions(appUrl, appName, appDescription);
         }
+    }
+
+    // Nova função para mostrar opções de compartilhamento
+    showShareOptions(url, name, description) {
+        const shareModal = document.createElement('div');
+        shareModal.className = 'share-modal';
+        shareModal.innerHTML = `
+            <div class="share-content">
+                <h3>📤 Compartilhar App</h3>
+                <p>Escolha como compartilhar o ${name}:</p>
+                
+                <div class="share-buttons">
+                    <button class="share-btn whatsapp" onclick="window.open('https://wa.me/?text=' + encodeURIComponent('🎯 ${name}\\n\\n${description}\\n\\n👉 ${url}'), '_blank'); document.body.removeChild(document.querySelector('.share-modal'));">
+                        💚 WhatsApp
+                    </button>
+                    <button class="share-btn telegram" onclick="window.open('https://t.me/share/url?url=' + encodeURIComponent('${url}') + '&text=' + encodeURIComponent('🎯 ${name}\\n\\n${description}'), '_blank'); document.body.removeChild(document.querySelector('.share-modal'));">
+                        💙 Telegram
+                    </button>
+                    <button class="share-btn copy" onclick="navigator.clipboard.writeText('${url}').then(() => { alert('Link copiado!'); document.body.removeChild(document.querySelector('.share-modal')); });">
+                        📋 Copiar Link
+                    </button>
+                    <button class="share-btn email" onclick="window.open('mailto:?subject=' + encodeURIComponent('Confira o ${name}!') + '&body=' + encodeURIComponent('Olá!\\n\\nRecomendo o ${name} para organizar eventos em grupo:\\n\\n${description}\\n\\nAcesse: ${url}')); document.body.removeChild(document.querySelector('.share-modal'));">
+                        📧 Email
+                    </button>
+                </div>
+                
+                <button class="close-share" onclick="document.body.removeChild(document.querySelector('.share-modal'));">❌ Fechar</button>
+            </div>
+        `;
+        
+        document.body.appendChild(shareModal);
     }
 
     // UTILITÁRIOS DE UI
@@ -890,40 +914,40 @@ END:VCALENDAR`;
 // Inicializar aplicativo
 const app = new GroupScheduler();
 
-// PWA Install Prompt
+// PWA Install Prompt - Botão pequeno no header
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     
-    const installBtn = document.createElement('button');
-    installBtn.textContent = '📱 Instalar Organizador Rola';
-    installBtn.className = 'btn-primary';
-    installBtn.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1000;
-        border-radius: 50px;
-        padding: 15px 20px;
-        font-weight: 700;
-        box-shadow: 0 10px 30px rgba(0, 212, 170, 0.4);
-    `;
-    
-        installBtn.addEventListener('click', () => {
-        installBtn.style.display = 'none';
-        deferredPrompt.prompt();
+    // Mostrar botão pequeno no header
+    const installBtn = document.getElementById('installAppBtn');
+    if (installBtn) {
+        installBtn.style.display = 'inline-block';
+        installBtn.title = 'Instalar Organizador Rola como app';
         
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('Usuário instalou o PWA');
-                app.addNotification('🎉 Organizador Rola instalado com sucesso!');
-            }
-            deferredPrompt = null;
+        installBtn.addEventListener('click', () => {
+            deferredPrompt.prompt();
+            
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Usuário instalou o PWA');
+                    app.addNotification('🎉 Organizador Rola instalado com sucesso!');
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
         });
-    });
-    
-    document.body.appendChild(installBtn);
+    }
+});
+
+// Esconder botão se já estiver instalado
+window.addEventListener('appinstalled', () => {
+    const installBtn = document.getElementById('installAppBtn');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
+    app.addNotification('🎉 Organizador Rola instalado!');
 });
 
 // Service Worker Registration
@@ -938,5 +962,3 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
-
-
